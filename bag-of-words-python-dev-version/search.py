@@ -6,10 +6,7 @@ import cv2
 import numpy as np
 import joblib
 from scipy.cluster.vq import *
-
 from sklearn import preprocessing
-import numpy as np
-
 from rootsift import RootSIFT
 
 # Get the path of the training set
@@ -26,72 +23,80 @@ im_features, image_paths, idf, numWords, voc = joblib.load("bag-of-words.pkl")
 # Load inverted index
 inverted_index = joblib.load("inverted_index.pkl")
 
-    
 # Create feature extraction and keypoint detector objects
-# fea_det = cv2.FeatureDetector_create("SIFT")
-# des_ext = cv2.DescriptorExtractor_create("SIFT")
 fea_det = cv2.xfeatures2d.SIFT_create()
 
-# List where all the descriptors are stored
-des_list = []
-
+# Read and resize the query image
 im = cv2.imread(image_path)
 im_size = im.shape
-# print str(im.shape)
-im = cv2.resize(im,(im_size[1]//4,im_size[0]//4))
+im = cv2.resize(im, (im_size[1] // 4, im_size[0] // 4))
 
+# Extract keypoints and descriptors for the query image
+kpts_query, des_query = fea_det.detectAndCompute(im, None)
 
-# kpts = fea_det.detect(im)
-# kpts, des = des_ext.compute(im, kpts)
-kpts, des = fea_det.detectAndCompute(im, None)
+# Prepare to store relevant images
+relevant_images = set()
 
-# rootsift
-#rs = RootSIFT()
-#des = rs.compute(kpts, des)
-
-des_list.append((image_path, des))   
-    
-# Stack all the descriptors vertically in a numpy array
-descriptors = des_list[0][1]
-
-# 
+# Compute BoW features for the query image
 test_features = np.zeros((1, numWords), "float32")
-words, distance = vq(descriptors,voc)
+words, distance = vq(des_query, voc)
 for w in words:
     test_features[0][w] += 1
 
-# Perform Tf-Idf vectorization and L2 normalization
-test_features = test_features*idf
+# Perform TF-IDF vectorization and L2 normalization
+test_features = test_features * idf
 test_features = preprocessing.normalize(test_features, norm='l2')
 
-relevant_images = set()
+# Use inverted index to find relevant images
 for w in words:
     if w in inverted_index:
         relevant_images.update(inverted_index[w])
+
 if not relevant_images:
     print("No related images found.")
     exit()
 
 relevant_images = list(relevant_images)
 
-relevant_im_features = im_features[[image_paths.index(img) for img in relevant_images]]
+# Prepare to store the scores and matched images
+scores = []
+matched_images = []
 
+# Iterate through relevant images and perform spatial verification
+for img_path in relevant_images:
+    # Read the relevant image
+    img_relevant = cv2.imread(img_path)
+    img_relevant = cv2.resize(img_relevant, (img_relevant.shape[1] // 4, img_relevant.shape[0] // 4))
 
-score = np.dot(test_features, im_features.T)
-rank_ID = np.argsort(-score)
+    # Extract keypoints and descriptors for the relevant image
+    kpts_relevant, des_relevant = fea_det.detectAndCompute(img_relevant, None)
+
+    # Match descriptors using BFMatcher
+    bf = cv2.BFMatcher(cv2.NORM_L2, crossCheck=True)
+    matches = bf.match(des_query, des_relevant)
+
+    # Sort matches by distance
+    matches = sorted(matches, key=lambda x: x.distance)
+
+    # Apply RANSAC to find good matches
+    if len(matches) > 10:  # Ensure there are enough matches
+        src_pts = np.float32([kpts_query[m.queryIdx].pt for m in matches]).reshape(-1, 1, 2)
+        dst_pts = np.float32([kpts_relevant[m.trainIdx].pt for m in matches]).reshape(-1, 1, 2)
+
+        # Find homography
+        M, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC)
+
+        # Count inliers
+        inliers = mask.ravel().tolist()
+        num_inliers = inliers.count(1)
+
+        # Store the score based on the number of inliers
+        scores.append(num_inliers)
+        matched_images.append(img_path)
+
+# Sort images based on scores
+rank_ID = np.argsort(-np.array(scores))
 
 # Visualize the results
-# figure()
-# gray()
-# subplot(5,4,1)
-# imshow(im[:,:,::-1])
-# axis('off')
-for i, ID in enumerate(rank_ID[0][0:16]):
-	print(str(image_paths[ID]))
-	# img = Image.open(image_paths[ID])
-	# gray()
-	# subplot(5,4,i+5)
-	# imshow(img)
-	# axis('off')
-
-# show()  
+for i in range(min(16, len(rank_ID))):
+    print(str(matched_images[rank_ID[i]]))
