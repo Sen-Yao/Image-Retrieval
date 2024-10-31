@@ -1,6 +1,8 @@
 /.DS_Store
 /image retrieval.pdf
 
+/.vscode/
+
 bag-of-words-python-dev-version/__pycache__
 
 bag-of-words-python-dev-version/dataset
