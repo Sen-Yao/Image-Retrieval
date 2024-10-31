@@ -7,3 +7,7 @@
 index
 search
 ukbenchScores
+
+bag-of-words-python-dev-version/__pycache__
+
+bag-of-words-python-dev-version/dataset

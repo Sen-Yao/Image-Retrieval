@@ -5,7 +5,7 @@ import argparse as ap
 import cv2
 import numpy as np
 import os
-from sklearn.externals import joblib
+import joblib
 from scipy.cluster.vq import *
 
 from sklearn import preprocessing
@@ -51,9 +51,9 @@ for i, image_path in enumerate(image_paths):
     #     im = cv2.resize(im,(imagesize_1,imagesize_0))
     # print str(im.shape)
 
-    im = cv2.resize(im,(im_size[1]/4,im_size[0]/4))
+    im = cv2.resize(im,(im_size[1]//4,im_size[0]//4))
 
-    print "Extract SIFT of %s image, %d of %d images" %(training_names[i], i, len(image_paths))
+    print("Extract SIFT of {} image, {} of {} images".format(training_names[i], i, len(image_paths)))
     # kpts = fea_det.detect(im)
     # kpts, des = des_ext.compute(im, kpts)
     kpts, des = fea_det.detectAndCompute(im, None)

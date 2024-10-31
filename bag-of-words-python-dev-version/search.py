@@ -3,17 +3,13 @@
 
 import argparse as ap
 import cv2
-import imutils 
 import numpy as np
-import os
-from sklearn.externals import joblib
+import joblib
 from scipy.cluster.vq import *
 
 from sklearn import preprocessing
 import numpy as np
 
-from pylab import *
-from PIL import Image
 from rootsift import RootSIFT
 
 # Get the path of the training set
@@ -38,7 +34,7 @@ des_list = []
 im = cv2.imread(image_path)
 im_size = im.shape
 # print str(im.shape)
-im = cv2.resize(im,(im_size[1]/4,im_size[0]/4))
+im = cv2.resize(im,(im_size[1]//4,im_size[0]//4))
 
 
 # kpts = fea_det.detect(im)
