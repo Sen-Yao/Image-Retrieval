@@ -3,6 +3,6 @@
 
 /.vscode/
 
-bag-of-words-python-dev-version/__pycache__
+/bag-of-words-python-dev-version/__pycache__
 
-bag-of-words-python-dev-version/dataset
+/bag-of-words-python-dev-version/dataset
