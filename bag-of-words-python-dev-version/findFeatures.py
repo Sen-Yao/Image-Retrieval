@@ -87,6 +87,9 @@ print('voc',voc.shape)
 print('variance',variance)
 
 # Calculate the histogram of features
+
+inverted_index = {}
+
 im_features = np.zeros((len(image_paths), numWords), "float32")
 for i in range(len(image_paths)):
     words, distance = vq(des_list[i][1],voc)
@@ -96,6 +99,9 @@ for i in range(len(image_paths)):
     print(distance.shape)
     for w in words:
         im_features[i][w] += 1
+        if w not in inverted_index:
+            inverted_index[w] = []  # 初始化列表
+        inverted_index[w].append(image_paths[i])  # 添加图像路径
 
 # Perform Tf-Idf vectorization
 nbr_occurences = np.sum( (im_features > 0) * 1, axis = 0)
@@ -106,4 +112,5 @@ print('idf',idf)
 im_features = im_features*idf
 im_features = preprocessing.normalize(im_features, norm='l2')
 
-joblib.dump((im_features, image_paths, idf, numWords, voc), "bag-of-words.pkl", compress=3)         
+joblib.dump((im_features, image_paths, idf, numWords, voc), "bag-of-words.pkl", compress=3)
+joblib.dump(inverted_index, "inverted_index.pkl", compress=3)

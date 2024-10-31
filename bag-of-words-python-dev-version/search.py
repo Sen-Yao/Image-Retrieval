@@ -22,6 +22,10 @@ image_path = args["image"]
 
 # Load the classifier, class names, scaler, number of clusters and vocabulary 
 im_features, image_paths, idf, numWords, voc = joblib.load("bag-of-words.pkl")
+
+# Load inverted index
+inverted_index = joblib.load("inverted_index.pkl")
+
     
 # Create feature extraction and keypoint detector objects
 # fea_det = cv2.FeatureDetector_create("SIFT")
@@ -59,6 +63,19 @@ for w in words:
 # Perform Tf-Idf vectorization and L2 normalization
 test_features = test_features*idf
 test_features = preprocessing.normalize(test_features, norm='l2')
+
+relevant_images = set()
+for w in words:
+    if w in inverted_index:
+        relevant_images.update(inverted_index[w])
+if not relevant_images:
+    print("No related images found.")
+    exit()
+
+relevant_images = list(relevant_images)
+
+relevant_im_features = im_features[[image_paths.index(img) for img in relevant_images]]
+
 
 score = np.dot(test_features, im_features.T)
 rank_ID = np.argsort(-score)
