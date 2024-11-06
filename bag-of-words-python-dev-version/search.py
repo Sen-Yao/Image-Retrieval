@@ -5,7 +5,6 @@ import argparse as ap
 import cv2
 import numpy as np
 import joblib
-from scipy.cluster.vq import *
 from sklearn import preprocessing
 from rootsift import RootSIFT
 
@@ -37,9 +36,22 @@ kpts_query, des_query = fea_det.detectAndCompute(im, None)
 # Prepare to store relevant images
 relevant_images = set()
 
+# Create a Vocabulary Tree
+num_levels = 5  # Number of levels in the tree
+branching_factor = 10  # Number of branches per node
+vocab_tree = cv2.VocabularyTree(branching_factor, num_levels)
+
+# Assuming you have a list of all descriptors from your training images
+# You would typically load these from your database
+# For demonstration, let's say you have a list of descriptors
+# descriptors_list = [...]  # List of all descriptors from training images
+
+# Build the Vocabulary Tree with the descriptors
+# vocab_tree.build(descriptors_list)
+
 # Compute BoW features for the query image
 test_features = np.zeros((1, numWords), "float32")
-words, distance = vq(des_query, voc)
+words, distance = vocab_tree.predict(des_query)  # Use the Vocabulary Tree to predict words
 for w in words:
     test_features[0][w] += 1
 
